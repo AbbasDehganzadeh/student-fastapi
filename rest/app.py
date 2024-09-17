@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
-from typing import Optional, Union
+from typing import Annotated, Optional, Union
 from bson.objectid import ObjectId
 from uuid import uuid4
-from fastapi import FastAPI
+from fastapi import Body, FastAPI
 import pymongo
 
 app = FastAPI(root_path="/api")
@@ -43,18 +43,18 @@ def getStudents():
 
 @app.get("/students/{id_:str}")
 def getStudent(id_: str):
-    print(f"Id: {id_}{type(id_)} , ")
     student = db.student.find_one({"_id": ObjectId(id_)})
     student["_id"] = str(student["_id"])
     return {"student": student}
 
 
 @app.post("/students")
-def createStudents(student: Student):
-    print(student)
+def createStudents(student:Annotated[StudentUpdate, Body(embed=True)]):
+    print("Create:\t", student)
     new_student = {
         "name": student.name,
         "lastname": student.lastname,
+        "phonenumber":student.phonenumber,
         "score": student.score,
         "grade": student.grade,
     }
@@ -64,11 +64,12 @@ def createStudents(student: Student):
 
 
 @app.put("/students/{id_:str}", response_model=None)
-def updateStudents(id_: str, student: StudentUpdate):
+def updateStudents(id_: str, student: Annotated[StudentUpdate, Body(embed=True)]):
     de_student = getStudent(id_)["student"]
     new_student = {
         "name": student.name or de_student["name"],
         "lastname": student.lastname or de_student["lastname"],
+        "phonenumber": student.phonenumber or de_student["phonenumber"],
         "score": student.score or de_student["score"],
         "grade": student.grade or de_student["grade"],
     }
